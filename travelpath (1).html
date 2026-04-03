@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travel Path Checker</title>
+<style>
+  :root {
+    --gold:#FFC72C; --red:#DA291C; --dark:#1a1a1a; --card:#242424; --card2:#2e2e2e;
+    --text:#f0f0f0; --muted:#888; --green:#4ade80; --orange:#fb923c; --blue:#60a5fa; --purple:#c084fc;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--dark);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;padding-bottom:110px;}
+
+  header{background:var(--red);padding:14px 16px 10px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+  .header-top{display:flex;align-items:center;justify-content:space-between;}
+  .logo{font-size:20px;font-weight:900;color:var(--gold);}
+  .shift-badge{background:var(--gold);color:var(--dark);font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:uppercase;}
+  .progress-bar-wrap{margin-top:8px;background:rgba(0,0,0,0.3);border-radius:10px;height:7px;overflow:hidden;}
+  .progress-bar{height:100%;background:var(--gold);border-radius:10px;transition:width 0.4s;width:0%;}
+  .progress-label{margin-top:4px;font-size:11px;color:rgba(255,255,255,0.8);display:flex;justify-content:space-between;}
+
+  /* SETUP */
+  #setupScreen{padding:28px 18px;max-width:480px;margin:0 auto;}
+  .setup-title{font-size:34px;font-weight:900;color:var(--gold);line-height:1.1;margin-bottom:4px;}
+  .setup-sub{color:var(--muted);font-size:13px;margin-bottom:26px;}
+  .form-group{margin-bottom:18px;}
+  .form-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;display:block;}
+  .form-input{width:100%;background:var(--card);border:2px solid var(--card2);border-radius:12px;padding:13px 15px;color:var(--text);font-family:inherit;font-size:16px;outline:none;transition:border-color 0.2s;}
+  .form-input:focus{border-color:var(--gold);}
+  .shift-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .shift-btn{background:var(--card);border:2px solid var(--card2);border-radius:12px;padding:15px;color:var(--text);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+  .shift-btn.selected{background:var(--gold);color:var(--dark);border-color:var(--gold);}
+  .start-btn{width:100%;background:var(--gold);color:var(--dark);border:none;border-radius:14px;padding:17px;font-family:inherit;font-size:18px;font-weight:900;cursor:pointer;margin-top:8px;}
+  .start-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  /* MAIN */
+  #checklistScreen{padding:14px;max-width:600px;margin:0 auto;display:none;}
+
+  /* SALES TABLE */
+  .sales-section{background:var(--card);border-radius:14px;padding:14px;margin-bottom:14px;overflow-x:auto;}
+  .section-heading{font-size:16px;font-weight:900;color:var(--gold);margin-bottom:12px;}
+  .sales-table{width:100%;border-collapse:collapse;font-size:12px;min-width:420px;}
+  .sales-table th{background:var(--card2);color:var(--muted);padding:7px 6px;text-align:center;font-weight:700;font-size:11px;text-transform:uppercase;}
+  .sales-table th.label-col{text-align:left;min-width:90px;}
+  .sales-table td{padding:5px 4px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.05);}
+  .sales-table td.label-col{text-align:left;color:var(--muted);font-size:11px;font-weight:700;padding-left:2px;}
+  .sales-input{width:100%;background:var(--card2);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:5px 4px;color:var(--text);font-family:inherit;font-size:12px;text-align:center;outline:none;}
+  .sales-input:focus{border-color:var(--gold);}
+  .labour-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);}
+  .labour-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;flex-shrink:0;}
+  .labour-input{flex:1;background:var(--card2);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;color:var(--text);font-family:inherit;font-size:14px;outline:none;}
+  .labour-input:focus{border-color:var(--gold);}
+
+  /* SMART */
+  .smart-section{background:var(--card);border-radius:14px;padding:14px;margin-bottom:14px;}
+  .smart-row{display:grid;grid-template-columns:26px 1fr 1fr;gap:8px;align-items:flex-start;margin-bottom:10px;}
+  .smart-row:last-child{margin-bottom:0;}
+  .smart-num{background:var(--gold);color:var(--dark);font-weight:900;font-size:14px;width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+  .smart-col-head{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+  .smart-input{width:100%;background:var(--card2);border:2px solid rgba(255,255,255,0.07);border-radius:9px;padding:9px;color:var(--text);font-family:inherit;font-size:13px;outline:none;resize:none;transition:border-color 0.2s;}
+  .smart-input:focus{border-color:var(--gold);}
+  .smart-result{width:100%;background:rgba(74,222,128,0.08);border:2px solid rgba(74,222,128,0.15);border-radius:9px;padding:9px;color:var(--text);font-family:inherit;font-size:13px;outline:none;resize:none;transition:border-color 0.2s;}
+  .smart-result:focus{border-color:var(--green);}
+  .smart-headers{display:grid;grid-template-columns:26px 1fr 1fr;gap:8px;margin-bottom:6px;padding:0 0 6px;border-bottom:1px solid rgba(255,255,255,0.07);}
+
+  /* PRIORITY LEGEND */
+  .priority-legend{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+  .legend-item{background:var(--card);border-radius:10px;padding:9px 11px;display:flex;align-items:center;gap:8px;}
+  .legend-letter{font-size:16px;font-weight:900;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .la{background:#ff6b6b;color:#fff;} .lb{background:var(--gold);color:var(--dark);} .lc{background:var(--blue);color:#fff;} .ld{background:var(--purple);color:#fff;}
+  .legend-text{font-size:11px;line-height:1.3;color:var(--muted);}
+  .legend-text strong{color:var(--text);font-size:12px;display:block;}
+
+  /* ISSUES */
+  .issues-panel{background:var(--card);border-radius:14px;margin-bottom:14px;padding:14px;border:1px solid rgba(251,146,60,0.3);display:none;}
+  .issues-panel.visible{display:block;}
+  .issues-title{font-size:16px;font-weight:900;color:var(--orange);margin-bottom:10px;}
+  .issue-item{background:var(--card2);border-radius:9px;padding:9px 11px;margin-bottom:7px;font-size:13px;}
+  .issue-section-label{color:var(--muted);font-size:11px;margin-bottom:2px;}
+
+  /* SECTIONS */
+  .section-card{background:var(--card);border-radius:14px;margin-bottom:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);}
+  .section-header{display:flex;align-items:center;gap:11px;padding:13px 14px;cursor:pointer;user-select:none;}
+  .section-num{background:var(--gold);color:var(--dark);font-weight:900;font-size:14px;width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .section-num.done{background:var(--green);}
+  .section-title-wrap{flex:1;}
+  .section-title{font-weight:700;font-size:14px;}
+  .section-mini-progress{height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:5px;overflow:hidden;}
+  .section-mini-bar{height:100%;background:var(--green);border-radius:2px;transition:width 0.3s;}
+  .section-count{font-size:12px;color:var(--muted);font-weight:600;}
+  .section-arrow{color:var(--muted);font-size:18px;}
+  .section-body{display:none;padding:0 14px 10px;}
+  .section-body.open{display:block;}
+  .check-item{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:opacity 0.2s;}
+  .check-item:last-child{border-bottom:none;}
+  .check-item.checked{opacity:0.45;}
+  .check-box{width:22px;height:22px;border-radius:6px;border:2px solid var(--card2);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;background:var(--card2);}
+  .check-item.checked .check-box{background:var(--green);border-color:var(--green);}
+  .check-tick{color:var(--dark);font-size:12px;font-weight:900;display:none;}
+  .check-item.checked .check-tick{display:block;}
+  .check-label{font-size:13px;line-height:1.4;flex:1;}
+  .check-label.bold-item{font-weight:700;color:#fff;}
+  .priority-tag{font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;flex-shrink:0;margin-top:2px;text-transform:uppercase;}
+  .prio-a{background:rgba(218,41,28,0.25);color:#ff6b6b;} .prio-b{background:rgba(255,199,44,0.2);color:var(--gold);}
+  .flag-btn{background:rgba(251,146,60,0.15);border:1px solid rgba(251,146,60,0.3);color:var(--orange);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;margin-top:1px;font-family:inherit;}
+  .flag-btn.flagged{background:rgba(251,146,60,0.3);border-color:var(--orange);}
+
+  /* POST SHIFT / COMPLETE */
+  #postShiftScreen{padding:20px 18px;max-width:600px;margin:0 auto;display:none;}
+  .post-title{font-size:28px;font-weight:900;color:var(--gold);margin-bottom:4px;}
+  .post-sub{color:var(--muted);font-size:13px;margin-bottom:18px;}
+  .post-card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:14px;}
+  .post-card-title{font-size:15px;font-weight:900;color:var(--gold);margin-bottom:12px;}
+  .post-smart-row{display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:flex-start;margin-bottom:10px;}
+  .post-target-text{font-size:13px;color:var(--muted);background:var(--card2);border-radius:8px;padding:9px;line-height:1.4;}
+  .post-result-display{font-size:13px;color:var(--green);background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:8px;padding:9px;margin-top:6px;line-height:1.4;}
+  .post-result-empty{color:var(--muted);font-style:italic;}
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .stat-card{background:var(--card);border-radius:13px;padding:14px;}
+  .stat-num{font-size:34px;font-weight:900;color:var(--gold);line-height:1;}
+  .stat-label{font-size:12px;color:var(--muted);margin-top:3px;}
+  .reset-btn{width:100%;background:var(--card);color:var(--text);border:2px solid var(--card2);border-radius:13px;padding:15px;font-family:inherit;font-size:17px;font-weight:900;cursor:pointer;margin-top:4px;}
+
+  /* COMPLETE */
+  #completeScreen{padding:36px 18px;text-align:center;display:none;max-width:480px;margin:0 auto;}
+  .complete-icon{font-size:56px;margin-bottom:14px;}
+  .complete-title{font-size:36px;font-weight:900;color:var(--gold);margin-bottom:6px;}
+  .complete-sub{color:var(--muted);margin-bottom:22px;font-size:14px;}
+
+  /* BOTTOM NAV */
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid rgba(255,255,255,0.08);padding:10px 16px 18px;display:none;gap:10px;z-index:100;}
+  .bottom-nav.visible{display:flex;}
+  .nav-btn{flex:1;border:none;border-radius:12px;padding:14px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;}
+  .nav-btn-secondary{background:var(--card2);color:var(--text);}
+  .nav-btn-primary{background:var(--gold);color:var(--dark);}
+  .nav-btn-green{background:var(--green);color:var(--dark);}
+
+  .divider{height:1px;background:rgba(255,255,255,0.07);margin:10px 0;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">🍟 Travel Path</div>
+    <div class="shift-badge">Store 1210</div>
+  </div>
+</header>
+
+<!-- SETUP -->
+<div id="setupScreen">
+  <div style="font-size:44px;margin:8px 0;">📋</div>
+  <div class="setup-title">Shift Leader<br>Travel Path</div>
+  <div class="setup-sub">McDonald's Store 1210 · Edinburgh</div>
+  <div class="form-group">
+    <label class="form-label">Your Name</label>
+    <input class="form-input" type="text" id="leaderName" placeholder="e.g Rezaul">
+  </div>
+  <div class="form-group">
+    <label class="form-label">Shift Type</label>
+    <div class="shift-buttons">
+      <button class="shift-btn" id="btn-Open" onclick="selectShift('Open')">🌅 Open</button>
+      <button class="shift-btn" id="btn-2-11" onclick="selectShift('2-11')">🌙 2–11</button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Day</label>
+    <select class="form-input" id="shiftDay">
+      <option value="">Select day...</option>
+      <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+      <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+    </select>
+  </div>
+  <button class="start-btn" id="startBtn" onclick="startChecklist()" disabled>START TRAVEL PATH →</button>
+</div>
+
+<!-- CHECKLIST -->
+<div id="checklistScreen">
+
+  <!-- SALES TABLE -->
+  <div class="sales-section">
+    <div class="section-heading">📊 Hourly Sales</div>
+    <div style="overflow-x:auto;">
+      <table class="sales-table" id="salesTable">
+        <thead>
+          <tr>
+            <th class="label-col">Hour</th>
+            <th id="h1">—</th><th id="h2">—</th><th id="h3">—</th><th id="h4">—</th>
+            <th id="h5">—</th><th id="h6">—</th><th id="h7">—</th><th id="h8">—</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label-col">Projected £</td>
+            <td><input class="sales-input" type="number" placeholder="0" id="proj-0"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="proj-1"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="proj-2"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="proj-3"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="proj-4"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="proj-5"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="proj-6"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="proj-7"></td>
+          </tr>
+          <tr>
+            <td class="label-col">Actual £</td>
+            <td><input class="sales-input" type="number" placeholder="0" id="act-0"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="act-1"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="act-2"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="act-3"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="act-4"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="act-5"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="act-6"></td>
+            <td><input class="sales-input" type="number" placeholder="0" id="act-7"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="labour-row">
+      <span class="labour-label">Projected Labour %</span>
+      <input class="labour-input" type="number" id="projLabour" placeholder="e.g. 22">
+      <span class="labour-label" style="margin-left:10px;">Actual Labour %</span>
+      <input class="labour-input" type="number" id="actLabour" placeholder="e.g. 24">
+    </div>
+  </div>
+
+  <!-- SMART TARGETS -->
+  <div class="smart-section">
+    <div class="section-heading">🎯 SMART Shift Targets</div>
+    <div class="smart-headers">
+      <div></div>
+      <div class="smart-col-head">Target</div>
+      <div class="smart-col-head" style="color:rgba(74,222,128,0.8);">Post-Shift Result</div>
+    </div>
+    <div class="smart-row">
+      <div class="smart-num">1</div>
+      <textarea class="smart-input" id="smart1" rows="2" placeholder="e.g. Keep drive thru under 90 seconds all shift"></textarea>
+      <textarea class="smart-result" id="result1" rows="2" placeholder="How did it go?"></textarea>
+    </div>
+    <div class="smart-row">
+      <div class="smart-num">2</div>
+      <textarea class="smart-input" id="smart2" rows="2" placeholder="e.g. All crew in correct uniform by 9am"></textarea>
+      <textarea class="smart-result" id="result2" rows="2" placeholder="How did it go?"></textarea>
+    </div>
+    <div class="smart-row">
+      <div class="smart-num">3</div>
+      <textarea class="smart-input" id="smart3" rows="2" placeholder="e.g. Zero food complaints this shift"></textarea>
+      <textarea class="smart-result" id="result3" rows="2" placeholder="How did it go?"></textarea>
+    </div>
+  </div>
+
+  <!-- PRIORITY LEGEND -->
+  <div class="priority-legend">
+    <div class="legend-item"><div class="legend-letter la">A</div><div class="legend-text"><strong>Safety & Security</strong>Fix now</div></div>
+    <div class="legend-item"><div class="legend-letter lb">B</div><div class="legend-text"><strong>QSC Issue</strong>Fix now</div></div>
+    <div class="legend-item"><div class="legend-letter lc">C</div><div class="legend-text"><strong>Comfort/Ops</strong>1–3 hrs</div></div>
+    <div class="legend-item"><div class="legend-letter ld">D</div><div class="legend-text"><strong>Appearance</strong>1–3 days</div></div>
+  </div>
+
+  <!-- FLAGGED ISSUES -->
+  <div class="issues-panel" id="issuesPanel">
+    <div class="issues-title">⚠️ Flagged Issues</div>
+    <div id="issuesList"></div>
+  </div>
+
+  <!-- CHECKLIST SECTIONS -->
+  <div id="sectionsContainer"></div>
+</div>
+
+<!-- POST SHIFT SUMMARY -->
+<div id="postShiftScreen">
+  <div style="font-size:44px;margin-bottom:8px;">📋</div>
+  <div class="post-title">Post-Shift Summary</div>
+  <div class="post-sub" id="postSubLabel"></div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-num" id="statChecked">0</div><div class="stat-label">Checks done</div></div>
+    <div class="stat-card"><div class="stat-num" id="statIssues" style="color:var(--orange)">0</div><div class="stat-label">Issues flagged</div></div>
+    <div class="stat-card"><div class="stat-num" id="statSections">0</div><div class="stat-label">Sections complete</div></div>
+    <div class="stat-card"><div class="stat-num" id="statTime">--</div><div class="stat-label">Minutes taken</div></div>
+  </div>
+
+  <!-- Sales summary -->
+  <div class="post-card" id="salesSummaryCard">
+    <div class="post-card-title">📊 Sales & Labour</div>
+    <div id="salesSummaryContent"></div>
+  </div>
+
+  <!-- SMART results -->
+  <div class="post-card">
+    <div class="post-card-title">🎯 SMART Target Results</div>
+    <div id="smartSummary"></div>
+  </div>
+
+  <!-- Issues -->
+  <div class="post-card" id="issuesSummaryCard" style="display:none;">
+    <div class="post-card-title" style="color:var(--orange);">⚠️ Issues to Action</div>
+    <div id="issuesSummaryContent"></div>
+  </div>
+
+  <button class="reset-btn" onclick="resetAll()">🔄 START NEW SHIFT</button>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottomNav">
+  <button class="nav-btn nav-btn-secondary" onclick="showIssues()">⚠️ Issues (<span id="issueCount">0</span>)</button>
+  <button class="nav-btn nav-btn-primary" onclick="finishChecklist()">FINISH SHIFT ✓</button>
+</div>
+
+<script>
+var SECTIONS=[
+  {id:1,title:"1. Miscellaneous / Admin",items:[
+    {text:"Check restaurant email & Intranet for Ops Updates"},
+    {text:"Review sales projections & channel split data"},
+    {text:"Have a handover conversation with the previous Shift Leader"},
+    {text:"Check Product Outage Tool for any items not on sale"},
+    {text:"Review Planned Maintenance Calendar & plan required tasks"},
+    {text:"Check for any open eTech or MyTSP tickets & engineer visits"},
+    {text:"Wi-Fi, music, lighting & air conditioning settings reviewed"},
+    {text:"Count the safe and ensure cash procedures are in place",bold:true,prio:"A"}
+  ]},
+  {id:2,title:"2. People",items:[
+    {text:"Review previously completed Floor Plan & assign Area Leaders"},
+    {text:"Meet & greet the team with energy and positivity"},
+    {text:"Set & communicate SMART Shift Targets with Area Leaders & Crew"},
+    {text:"Plan for Crew engagement, motivation or competition"},
+    {text:"Check Crew Trainers have all they need for Learning & Development"},
+    {text:"Inform the team of any promotions or product outages"},
+    {text:"Check uniform policy, appearance & hygiene standards are followed",bold:true,prio:"A"},
+    {text:"Check all employees follow the footwear guidance to ensure safety",bold:true,prio:"A"},
+    {text:"Check all employees adhere to Fitness to Work regulations",bold:true,prio:"A"}
+  ]},
+  {id:3,title:"3. Exterior, Corral & Drive Thru",items:[
+    {text:"Approach, car park & surrounding areas are litter-free"},
+    {text:"Rubbish bins are clean & not overflowing",bold:true,prio:"B"},
+    {text:"Restaurant & carpark lighting / Sky Sign is on/off according to daypart"},
+    {text:"Corral - door secure. Bins & waste barrels have lids & clean. No signs of pests",bold:true,prio:"A"},
+    {text:"Drive Thru lane, landscaping, menu boards are clean & tidy"},
+    {text:"Drive Thru Cashier, Presenter and Fast Forward booths are clean & tidy"},
+    {text:"Outdoor furniture & signage are clean / in good condition"},
+    {text:"Windows, doors, floors & customer displays are clean / in good condition"}
+  ]},
+  {id:4,title:"4. Dining Area, Kiosks, Play Area & Toilets",items:[
+    {text:"Customer entry mats in place & clean",bold:true,prio:"B"},
+    {text:"Wet floor signs available & in use when appropriate",bold:true,prio:"A"},
+    {text:"Customer areas clean & tidy: tables, chairs, highchairs, floors, trays"},
+    {text:"Correct cleaning materials are used & not visible to customers"},
+    {text:"Table Service is on & tent cards are available at Kiosks / Tills"},
+    {text:"Digital Display Screens / posters are clean & in working order"},
+    {text:"Kiosks are clean & working correctly: screens, printers"},
+    {text:"Beverage / Condiment Bar is clean & stocked. No signs of pests",prio:"A"},
+    {text:"Waste / recycling units are clean & not overflowing. No signs of pests"},
+    {text:"Digi-Play / Magic Tables / Tablets & Play Place clean & in good repair"},
+    {text:"Toilets are clean. Soap, toilet paper & hand dryers are working"},
+    {text:"Mag lock / door operational",bold:true,prio:"A"}
+  ]},
+  {id:5,title:"5. Service, Beverage, Drive Thru & Delivery",items:[
+    {text:"Check in with Area Leader(s) – people positioning, set priorities & targets",bold:true,prio:"B"},
+    {text:"Floors clean & free from spills & rubbish. No signs of pests",bold:true,prio:"A"},
+    {text:"Handwashing & cloths procedures are followed",bold:true,prio:"A"},
+    {text:"High-vis vests are available for Click & Serve / Pull Forward orders",bold:true,prio:"A"},
+    {text:"DT: Order Takers focusing on customer; pulling forward when needed"},
+    {text:"Front / Click & Serve: stocked condiment aprons worn by all service staff"},
+    {text:"McDelivery: bagging procedures & accuracy checks are followed"},
+    {text:"Equipment & technology set up & stocked correctly"},
+    {text:"Courier Waiting Room / Courier Area clean & tidy"}
+  ]},
+  {id:6,title:"6. Production / Kitchen",items:[
+    {text:"Check in with Area Leader – people positioning, set priorities & targets"},
+    {text:"Digital Food Safety (DFS) has been completed",bold:true,prio:"A"},
+    {text:"Handwashing & cloth procedures are followed",bold:true,prio:"A"},
+    {text:"All food items are rotated, covered & have secondary shelf lives",bold:true,prio:"A"},
+    {text:"Equipment turned on/off according to fire-up / fire-down schedule"},
+    {text:"Fry Station, Vats, Grills & other equipment – clean & correct settings"},
+    {text:"Appropriate number of IPs set up & in use. eProduction is being followed"},
+    {text:"Prep Table switched on & stocked according to Be Well Served guides"},
+    {text:"Defrosting & Tempering in place according to Build to Charts"}
+  ]},
+  {id:7,title:"7. Stock Room, Crew Room & Office",items:[
+    {text:"Drinks machine / Multiplex (BIB) stocked and clean"},
+    {text:"Back Room and stock areas clean & tidy. Correct cleaning supplies in use"},
+    {text:"Walkways and Fire Exits are clear. Back Door Policy is followed",bold:true,prio:"A"},
+    {text:"Crew areas & Manager's Office are clean & tidy and not used as storage"}
+  ]}
+];
+
+var HOURS_OPEN=['6am','7am','8am','9am','10am','11am','12pm','1pm'];
+var HOURS_2_11=['2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm'];
+var state={leader:'',shift:'',day:'',checked:{},flagged:{},startTime:null};
+var selectedShift='';
+
+function selectShift(s){
+  selectedShift=s;
+  document.querySelectorAll('.shift-btn').forEach(function(b){b.classList.remove('selected');});
+  document.getElementById('btn-'+s).classList.add('selected');
+  checkReady();
+}
+function checkReady(){
+  var name=document.getElementById('leaderName').value.trim();
+  var day=document.getElementById('shiftDay').value;
+  document.getElementById('startBtn').disabled=!(name&&selectedShift&&day);
+}
+document.getElementById('leaderName').addEventListener('input',checkReady);
+document.getElementById('shiftDay').addEventListener('change',checkReady);
+
+function getTotalItems(){return SECTIONS.reduce(function(a,s){return a+s.items.length;},0);}
+
+function startChecklist(){
+  state.leader=document.getElementById('leaderName').value.trim();
+  state.shift=selectedShift;
+  state.day=document.getElementById('shiftDay').value;
+  state.startTime=Date.now();
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('checklistScreen').style.display='block';
+  document.getElementById('bottomNav').classList.add('visible');
+
+  // Set hour headers
+  var hours=state.shift==='Open'?HOURS_OPEN:HOURS_2_11;
+  for(var i=0;i<8;i++){document.getElementById('h'+(i+1)).textContent=hours[i];}
+
+  document.querySelector('header').innerHTML=
+    '<div class="header-top"><div class="logo">🍟 Travel Path</div><div class="shift-badge">'+state.day+' · '+state.shift+'</div></div>'+
+    '<div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>'+
+    '<div class="progress-label"><span id="progressText">0 / '+getTotalItems()+' checks</span><span id="progressPct">0%</span></div>';
+  renderSections();
+}
+
+function renderSections(){
+  var container=document.getElementById('sectionsContainer');
+  container.innerHTML='';
+  SECTIONS.forEach(function(section,si){
+    var doneCount=0;
+    section.items.forEach(function(_,ii){if(state.checked[si+'-'+ii])doneCount++;});
+    var isDone=doneCount===section.items.length;
+    var itemsHtml='';
+    section.items.forEach(function(item,ii){
+      var key=si+'-'+ii;
+      var checked=state.checked[key]?'checked':'';
+      var flagged=state.flagged[key]?'flagged':'';
+      var flagEmoji=state.flagged[key]?'⚠️':'🚩';
+      var boldClass=item.bold?'bold-item':'';
+      var prioHtml=item.prio?'<span class="priority-tag prio-'+item.prio.toLowerCase()+'">'+item.prio+'</span>':'';
+      itemsHtml+='<div class="check-item '+checked+'" id="item-'+key+'" onclick="toggleCheck('+si+','+ii+')">'+
+        '<div class="check-box"><span class="check-tick">✓</span></div>'+
+        '<div class="check-label '+boldClass+'">'+item.text+'</div>'+
+        prioHtml+
+        '<button class="flag-btn '+flagged+'" onclick="event.stopPropagation();flagItem('+si+','+ii+')">'+flagEmoji+'</button>'+
+        '</div>';
+    });
+    var card=document.createElement('div');
+    card.className='section-card';
+    card.id='section-'+si;
+    card.innerHTML=
+      '<div class="section-header" onclick="toggleSection('+si+')">'+
+        '<div class="section-num '+(isDone?'done':'')+'" id="snum-'+si+'">'+(isDone?'✓':section.id)+'</div>'+
+        '<div class="section-title-wrap">'+
+          '<div class="section-title">'+section.title+'</div>'+
+          '<div class="section-mini-progress"><div class="section-mini-bar" id="sbar-'+si+'" style="width:'+(doneCount/section.items.length*100)+'%"></div></div>'+
+        '</div>'+
+        '<div class="section-count" id="scount-'+si+'">'+doneCount+'/'+section.items.length+'</div>'+
+        '<span class="section-arrow" id="sarrow-'+si+'">'+(si===0?'▼':'›')+'</span>'+
+      '</div>'+
+      '<div class="section-body '+(si===0?'open':'')+'" id="sbody-'+si+'">'+itemsHtml+'</div>';
+    container.appendChild(card);
+  });
+  updateProgress();
+}
+
+function toggleSection(si){
+  var body=document.getElementById('sbody-'+si);
+  var arrow=document.getElementById('sarrow-'+si);
+  var open=body.classList.toggle('open');
+  arrow.textContent=open?'▼':'›';
+}
+
+function toggleCheck(si,ii){
+  var key=si+'-'+ii;
+  state.checked[key]=!state.checked[key];
+  document.getElementById('item-'+key).classList.toggle('checked',state.checked[key]);
+  var section=SECTIONS[si];
+  var doneCount=0;
+  section.items.forEach(function(_,i){if(state.checked[si+'-'+i])doneCount++;});
+  var isDone=doneCount===section.items.length;
+  var snum=document.getElementById('snum-'+si);
+  snum.textContent=isDone?'✓':section.id;
+  snum.classList.toggle('done',isDone);
+  document.getElementById('scount-'+si).textContent=doneCount+'/'+section.items.length;
+  document.getElementById('sbar-'+si).style.width=(doneCount/section.items.length*100)+'%';
+  updateProgress();
+}
+
+function flagItem(si,ii){
+  var key=si+'-'+ii;
+  state.flagged[key]=!state.flagged[key];
+  var btn=document.querySelector('#item-'+key+' .flag-btn');
+  btn.classList.toggle('flagged',state.flagged[key]);
+  btn.textContent=state.flagged[key]?'⚠️':'🚩';
+  var count=0;
+  Object.keys(state.flagged).forEach(function(k){if(state.flagged[k])count++;});
+  document.getElementById('issueCount').textContent=count;
+  renderIssuesPanel();
+}
+
+function renderIssuesPanel(){
+  var issues=[];
+  SECTIONS.forEach(function(section,si){
+    section.items.forEach(function(item,ii){
+      if(state.flagged[si+'-'+ii])issues.push({section:section.title,item:item.text,prio:item.prio});
+    });
+  });
+  var panel=document.getElementById('issuesPanel');
+  if(!issues.length){panel.classList.remove('visible');return;}
+  panel.classList.add('visible');
+  document.getElementById('issuesList').innerHTML=issues.map(function(i){
+    return '<div class="issue-item"><div class="issue-section-label">'+i.section+(i.prio?' · Priority '+i.prio:'')+'</div><div>'+i.item+'</div></div>';
+  }).join('');
+}
+
+function showIssues(){
+  var panel=document.getElementById('issuesPanel');
+  if(panel.classList.contains('visible'))panel.scrollIntoView({behavior:'smooth'});
+}
+
+function updateProgress(){
+  var total=getTotalItems();
+  var done=0;
+  Object.keys(state.checked).forEach(function(k){if(state.checked[k])done++;});
+  var pct=Math.round(done/total*100);
+  var bar=document.getElementById('progressBar');
+  if(bar){
+    bar.style.width=pct+'%';
+    document.getElementById('progressText').textContent=done+' / '+total+' checks';
+    document.getElementById('progressPct').textContent=pct+'%';
+  }
+}
+
+function finishChecklist(){
+  var total=getTotalItems();
+  var done=0; Object.keys(state.checked).forEach(function(k){if(state.checked[k])done++;});
+  var issues=0; Object.keys(state.flagged).forEach(function(k){if(state.flagged[k])issues++;});
+  var mins=Math.round((Date.now()-state.startTime)/60000);
+  var completedSections=0;
+  SECTIONS.forEach(function(s,si){
+    if(s.items.every(function(_,ii){return state.checked[si+'-'+ii];}))completedSections++;
+  });
+
+  document.getElementById('statChecked').textContent=done;
+  document.getElementById('statIssues').textContent=issues;
+  document.getElementById('statSections').textContent=completedSections;
+  document.getElementById('statTime').textContent=mins;
+  document.getElementById('postSubLabel').textContent=state.leader+' · '+state.day+' '+state.shift+' shift';
+
+  // Sales summary
+  var hours=state.shift==='Open'?HOURS_OPEN:HOURS_2_11;
+  var salesRows='<table class="sales-table" style="min-width:0;width:100%;"><thead><tr><th class="label-col" style="font-size:10px;">Hour</th>';
+  hours.forEach(function(h){salesRows+='<th style="font-size:10px;">'+h+'</th>';});
+  salesRows+='</tr></thead><tbody>';
+  salesRows+='<tr><td class="label-col">Projected £</td>';
+  for(var i=0;i<8;i++){var v=document.getElementById('proj-'+i).value;salesRows+='<td style="font-size:12px;">'+(v||'—')+'</td>';}
+  salesRows+='</tr><tr><td class="label-col">Actual £</td>';
+  for(var i=0;i<8;i++){var v=document.getElementById('act-'+i).value;salesRows+='<td style="font-size:12px;">'+(v||'—')+'</td>';}
+  salesRows+='</tr></tbody></table>';
+  var pLabour=document.getElementById('projLabour').value;
+  var aLabour=document.getElementById('actLabour').value;
+  salesRows+='<div style="display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);">'+
+    '<div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:700;">Projected Labour</div><div style="font-size:20px;font-weight:900;color:var(--gold);">'+(pLabour?pLabour+'%':'—')+'</div></div>'+
+    '<div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:700;">Actual Labour</div><div style="font-size:20px;font-weight:900;color:'+(aLabour&&pLabour&&parseFloat(aLabour)>parseFloat(pLabour)?'var(--orange)':'var(--green)')+';">'+(aLabour?aLabour+'%':'—')+'</div></div>'+
+    '</div>';
+  document.getElementById('salesSummaryContent').innerHTML='<div style="overflow-x:auto;">'+salesRows+'</div>';
+
+  // SMART summary
+  var smartHtml='';
+  for(var i=1;i<=3;i++){
+    var target=document.getElementById('smart'+i).value;
+    var result=document.getElementById('result'+i).value;
+    if(target){
+      smartHtml+='<div style="display:grid;grid-template-columns:26px 1fr;gap:8px;margin-bottom:12px;align-items:flex-start;">'+
+        '<div class="smart-num">'+i+'</div>'+
+        '<div>'+
+          '<div class="post-target-text">'+target+'</div>'+
+          '<div class="post-result-display '+(result?'':'post-result-empty')+'" style="margin-top:6px;">'+(result||'No result entered')+'</div>'+
+        '</div>'+
+        '</div>';
+    }
+  }
+  document.getElementById('smartSummary').innerHTML=smartHtml||'<div style="color:var(--muted);font-size:13px;">No targets were set.</div>';
+
+  // Issues summary
+  var issueItems=[];
+  SECTIONS.forEach(function(section,si){
+    section.items.forEach(function(item,ii){
+      if(state.flagged[si+'-'+ii])issueItems.push({section:section.title,item:item.text,prio:item.prio});
+    });
+  });
+  if(issueItems.length){
+    document.getElementById('issuesSummaryCard').style.display='block';
+    document.getElementById('issuesSummaryContent').innerHTML=issueItems.map(function(i){
+      return '<div class="issue-item"><div class="issue-section-label">'+i.section+(i.prio?' · Priority '+i.prio:'')+'</div><div>'+i.item+'</div></div>';
+    }).join('');
+  }
+
+  document.getElementById('checklistScreen').style.display='none';
+  document.getElementById('postShiftScreen').style.display='block';
+  document.getElementById('bottomNav').classList.remove('visible');
+  document.querySelector('header').innerHTML=
+    '<div class="header-top"><div class="logo">🍟 Travel Path</div><div class="shift-badge" style="background:var(--green);color:#111;">✓ Complete</div></div>';
+}
+
+function resetAll(){
+  state={leader:'',shift:'',day:'',checked:{},flagged:{},startTime:null};
+  selectedShift='';
+  document.getElementById('postShiftScreen').style.display='none';
+  document.getElementById('issuesSummaryCard').style.display='none';
+  document.getElementById('setupScreen').style.display='block';
+  document.getElementById('leaderName').value='';
+  document.getElementById('shiftDay').value='';
+  document.querySelectorAll('.shift-btn').forEach(function(b){b.classList.remove('selected');});
+  document.getElementById('startBtn').disabled=true;
+  document.querySelector('header').innerHTML=
+    '<div class="header-top"><div class="logo">🍟 Travel Path</div><div class="shift-badge">Store 1210</div></div>';
+}
+</script>
+</body>
+</html>
